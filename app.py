@@ -50,7 +50,7 @@ ai_service.classifier_path = next((p for p in weights_candidates if p.exists()),
 
 
 # -----------------------------------------------------------------------------
-# 2. CẤU HÌNH DJANGO SERVER
+# 2. CẤU HÌNH DJANGO SERVER & GUNICORN APPLICATION
 # -----------------------------------------------------------------------------
 from django.conf import settings
 from django.urls import path, re_path
@@ -59,6 +59,7 @@ from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.static import serve
 from django.core.management import execute_from_command_line
+from django.core.wsgi import get_wsgi_application
 
 if not settings.configured:
     settings.configure(
@@ -92,6 +93,9 @@ if not settings.configured:
     )
     import django
     django.setup()
+
+# Khai báo biến application phục vụ Gunicorn trên Render
+application = get_wsgi_application()
 
 
 # -----------------------------------------------------------------------------
