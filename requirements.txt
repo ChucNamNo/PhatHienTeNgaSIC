@@ -1,9 +1,6 @@
-# Các thư viện cần thiết cho hệ thống FallGuard AI (Django & AI Pipeline)
-# python -m pip install -r requirements.txt
-
-
 Django>=4.2,<6.0
 ultralytics>=8.2,<9.0
-opencv-python>=4.8,<5.0
+opencv-python-headless>=4.8,<5.0
 numpy>=1.24,<3.0
 Pillow>=10,<12
+gunicorn>=20.1.0
