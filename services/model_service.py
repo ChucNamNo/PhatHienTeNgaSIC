@@ -39,7 +39,7 @@ MAX_MISSED_FRAMES = 15
 KINETICS_RESET_AFTER_MISSED_FRAMES = 2
 LANDMARK_CONF_THRESHOLD = 0.15
 MIN_FALL_TORSO_ANGLE = 42.0       # Góc nghiêng thân tối thiểu để coi là ngã (độ)
-MAX_FALL_BBOX_RATIO = 1.15         # Tỷ lệ H/W tối đa khi ngã (trên sàn H/W < 1.0)
+MAX_FALL_BBOX_RATIO = 1.15        # Tỷ lệ H/W tối đa khi ngã (trên sàn H/W <= 1.15)
 
 COCO_CONNECTIONS = [
     (0, 1), (0, 2), (1, 3), (2, 4),
@@ -101,7 +101,7 @@ class PersonState:
 
     def check_geometric_fall(self, keypoints: np.ndarray, box: np.ndarray) -> bool:
         """Bộ lọc hình học: Xác nhận tư thế cơ thể có thực sự ngã/nằm ngang hay không."""
-        # 1. Tính toán góc nghiêng trục thân (Vector từ hông lên vai)
+        # 1. Tính toán góc nghiêng trục thân (Vector từ trung điểm hông lên vai)
         l_sh, r_sh = keypoints[5], keypoints[6]
         l_hip, r_hip = keypoints[11], keypoints[12]
 
@@ -109,9 +109,9 @@ class PersonState:
         mid_hip = (l_hip + r_hip) / 2.0
 
         dx = float(mid_shoulder[0] - mid_hip[0])
-        dy = float(mid_shoulder[1] - mid_hip[1])  # Lưu ý: Trục Y hướng xuống
+        dy = float(mid_shoulder[1] - mid_hip[1])  # Trục Y hướng xuống
 
-        # Góc lệch so với phương thẳng đứng
+        # Góc lệch so với phương thẳng đứng (độ)
         angle = math.degrees(math.atan2(abs(dx), abs(dy) + 1e-6))
         self.last_torso_angle = angle
 
@@ -120,14 +120,14 @@ class PersonState:
         h = max(float(box[3] - box[1]), 1.0)
         aspect_ratio = h / w
 
-        # Điều kiện ngã: Thân người nằm nghiêng góc lớn HOẶC khung bao bị nén bẹp nằm ngang
+        # Điều kiện ngã: Thân người nằm nghiêng góc lớn HOẶC khung bao bẹp ngang
         is_tilted = angle >= MIN_FALL_TORSO_ANGLE
         is_horizontal_box = aspect_ratio <= MAX_FALL_BBOX_RATIO
 
         return is_tilted or is_horizontal_box
 
     def extract_kinetics(self, keypoints: np.ndarray, confs: np.ndarray | None = None) -> np.ndarray:
-        """Trích xuất đặc trưng 102 chiều (Vị trí, Vận tốc, Gia tốc)."""
+        """Trích xuất đặc trưng 102 chiều (Vị trí 34, Vận tốc 34, Gia tốc 34)."""
         if self.strict_mode or confs is None:
             hip_center = (keypoints[11] + keypoints[12]) / 2.0
             shifted = keypoints - hip_center
@@ -231,7 +231,7 @@ class CameraState:
         assigned_person_ids = set()
         unmatched_detections = list(range(len(detected_boxes)))
 
-        # 1. Khớp IoU
+        # 1. Khớp bằng IoU
         for det_idx in list(unmatched_detections):
             box = detected_boxes[det_idx]
             best_iou = 0.10
@@ -253,7 +253,7 @@ class CameraState:
                 person.missed_frames = 0
                 matched_results.append((person, box, detected_keypoints[det_idx], detected_confs[det_idx]))
 
-        # 2. Khớp khoảng cách tâm
+        # 2. Khớp khoảng cách tâm khi Bounding Box biến dạng do ngã
         for det_idx in list(unmatched_detections):
             box = detected_boxes[det_idx]
             min_dist = 180.0
@@ -275,18 +275,19 @@ class CameraState:
                 person.missed_frames = 0
                 matched_results.append((person, box, detected_keypoints[det_idx], detected_confs[det_idx]))
 
-        # 3. Cấp ID mới
+        # 3. Cấp ID mới cho đối tượng chưa khớp
         for det_idx in unmatched_detections:
             p_id = self.next_track_id
             self.next_track_id += 1
             new_person = PersonState(
                 track_id=p_id,
                 last_box=detected_boxes[det_idx],
-                strict_mode=self.strict_mode
+                strict_mode=self.strict_mode,
             )
             self.persons[p_id] = new_person
             matched_results.append(
-                (new_person, detected_boxes[det_idx], detected_keypoints[det_idx], detected_confs[det_idx]))
+                (new_person, detected_boxes[det_idx], detected_keypoints[det_idx], detected_confs[det_idx])
+            )
 
         # 4. Dọn dẹp đối tượng không còn trong khung hình
         matched_ids = assigned_person_ids | {p.track_id for p, _, _, _ in matched_results}
@@ -316,21 +317,21 @@ class FallDetectionService:
         self.model_dir = root / "ai_models"
 
         pose_candidates = [
-            self.model_dir / pose_filename, 
-            self.model_dir / "yolov8n-pose.pt", 
-            self.model_dir / "yolo26n-pose.pt"
+            self.model_dir / pose_filename,
+            self.model_dir / "yolov8n-pose.pt",
+            self.model_dir / "yolo26n-pose.pt",
         ]
         self.pose_path = next((p for p in pose_candidates if p.exists()), self.model_dir / pose_filename)
 
         classifier_candidates = [
-            self.model_dir / "Best_BiGRU_Attention_Model.pth", 
-            self.model_dir / "Best BigRU Attention Model.pth"
+            self.model_dir / "Best_BiGRU_Attention_Model.pth",
+            self.model_dir / "Best BigRU Attention Model.pth",
         ]
         self.classifier_path = next((p for p in classifier_candidates if p.exists()), self.model_dir / "Best_BiGRU_Attention_Model.pth")
 
         config_candidates = [
-            self.model_dir / "Best_BiGRU_Attention_Config.npy", 
-            self.model_dir / "Best BigRU Attention Config.npy"
+            self.model_dir / "Best_BiGRU_Attention_Config.npy",
+            self.model_dir / "Best BigRU Attention Config.npy",
         ]
         self.config_path = next((p for p in config_candidates if p.exists()), self.model_dir / "Best_BiGRU_Attention_Config.npy")
 
@@ -392,10 +393,13 @@ class FallDetectionService:
                 # Warmup inference
                 dummy = np.zeros((YOLO_IMGSZ, YOLO_IMGSZ, 3), dtype=np.uint8)
                 pose_model.predict(
-                    source=dummy, verbose=False, conf=0.25, imgsz=YOLO_IMGSZ,
+                    source=dummy,
+                    verbose=False,
+                    conf=0.25,
+                    imgsz=YOLO_IMGSZ,
                     device=0 if self.device.type == "cuda" else "cpu",
                     half=self.device.type == "cuda",
-                    classes=0
+                    classes=0,
                 )
                 with torch.inference_mode():
                     classifier(torch.zeros(1, MAX_LEN, INPUT_SIZE, device=self.device))
@@ -404,8 +408,10 @@ class FallDetectionService:
                 self.pose_model = pose_model
                 self.model_loaded = True
                 self.load_error = None
+                print(f"[OK] AI Service đã nạp thành công trên thiết bị: {self.device} (Ngưỡng: {self.threshold:.4f})")
             except Exception as exc:
                 self.load_error = f"{type(exc).__name__}: {exc}"
+                logger.exception("Lỗi chi tiết khi nạp mô hình AI:")
                 raise
 
     def health(self, load: bool = False) -> dict[str, Any]:
@@ -533,7 +539,7 @@ class FallDetectionService:
                     person.fall_probability = 0.0
                     person.decision_buffer.append(False)
 
-            # Batched Inference
+            # Batched Inference qua BiGRU-Attention
             if ready_sequences:
                 batch_tensor = torch.from_numpy(np.stack(ready_sequences, axis=0)).to(self.device)
                 with torch.inference_mode():
@@ -546,7 +552,7 @@ class FallDetectionService:
                 for p, prob in zip(ready_persons, probabilities):
                     p.fall_probability = float(prob)
 
-            # Phân tích kết quả kết hợp Bộ lọc hình học (Geometric Gate)
+            # Phân tích kết hợp Bộ lọc hình học (Geometric Gate)
             for person, box, keypoints, confs in matched_targets:
                 # 1. Kiểm tra hình học: Góc nghiêng thân hoặc tỷ lệ khung bao nằm sàn
                 is_posture_fallen = person.check_geometric_fall(keypoints, box)
@@ -559,7 +565,7 @@ class FallDetectionService:
                     float(sum(person.decision_buffer) / len(person.decision_buffer))
                     if person.decision_buffer else 0.0
                 )
-                
+
                 # 3. Quyết định cuối cùng qua Bỏ phiếu thời gian (5/8 frame)
                 person.is_fall = (vote_ratio >= VOTE_THRESHOLD) and is_posture_fallen
                 if person.is_fall and not person.previous_is_fall:
@@ -583,6 +589,7 @@ class FallDetectionService:
                     "fall_probability": round(person.fall_probability, 6),
                     "vote_ratio": round(vote_ratio, 4),
                     "fall_count": person.fall_count,
+                    "torso_angle": round(person.last_torso_angle, 1),
                     "bbox": [round(float(v), 1) for v in box],
                     "keypoints": points,
                 })
