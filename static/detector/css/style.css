@@ -1,0 +1,1090 @@
+
+   :root {
+    /* Bảng màu nền (giữ tối để kính "nổi" rõ, nhưng bớt đục hơn) */
+    --bg-dark: #05070c;
+    --bg-deep: #0a0e18;
+    --samsung-blue: #0c84ff;
+    --samsung-blue-glow: rgba(12, 132, 255, 0.35);
+    --samsung-purple: #5e5ce6;
+  
+    /* ============================================================
+       Apple Liquid Glass — hệ vật liệu (material tiers)
+       Lấy cảm hứng từ visionOS/macOS Sequoia: kính càng "mỏng" thì
+       càng trong, càng nhiều highlight bo cong ở mép trên/trái.
+       ============================================================ */
+  
+    /* Regular material — dùng cho panel lớn (camera card, status card) */
+    --glass-bg-regular: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.10) 0%,
+      rgba(255, 255, 255, 0.03) 45%,
+      rgba(255, 255, 255, 0.015) 100%
+    );
+    --glass-bg-regular-hover: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.14) 0%,
+      rgba(255, 255, 255, 0.045) 45%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+  
+    /* Thin material — dùng cho pill/chip/nút nhỏ */
+    --glass-bg-thin: linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.09) 0%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+  
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --glass-border-hover: rgba(255, 255, 255, 0.32);
+  
+    /* Viền sáng "bắt mí" trên cùng — mô phỏng ánh sáng khúc xạ qua mép kính cong */
+    --glass-rim-light: rgba(255, 255, 255, 0.55);
+  
+    --glass-specular:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
+      inset 0 -1px 1px 0 rgba(0, 0, 0, 0.25),
+      inset 1px 0 0 0 rgba(255, 255, 255, 0.06);
+    --glass-shadow:
+      0 24px 48px -18px rgba(0, 0, 0, 0.7),
+      0 2px 8px -2px rgba(0, 0, 0, 0.35),
+      0 0 0 1px rgba(255, 255, 255, 0.03);
+  
+    --blur-regular: 32px;
+    --blur-thin: 20px;
+    --sat-glass: 200%;
+  
+    /* Trạng thái & cảnh báo */
+    --text-primary: #f8fafc;
+    --text-secondary: #97a3b8;
+    --text-tertiary: #647089;
+    --safe-green: #30d158;
+    --safe-glow: rgba(48, 209, 88, 0.45);
+    --warn-amber: #ffd60a;
+    --danger-red: #ff453a;
+    --danger-glow: rgba(255, 69, 58, 0.55);
+  
+    /* Spring physics timings — Apple dùng easing "quá đà nhẹ" rồi ổn định */
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-liquid: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    min-height: 100vh;
+    color: var(--text-primary);
+    font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+    background-color: var(--bg-dark);
+    background-image:
+      radial-gradient(at 0% 0%, rgba(12, 132, 255, 0.16) 0, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(94, 92, 230, 0.14) 0, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(255, 255, 255, 0.02) 0, transparent 60%);
+    background-attachment: fixed;
+    overflow-x: hidden;
+    position: relative;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  /* ==========================================================================
+     Ambient Liquid Mesh — chuyển động chậm hơn, mềm hơn, giống "chất lỏng"
+     ========================================================================== */
+  .ambient-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(110px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    animation: floatAmbient 22s var(--ease-liquid) infinite alternate;
+  }
+  
+  .ambient-glow-1 {
+    width: 560px;
+    height: 560px;
+    top: -100px;
+    left: -100px;
+    background: radial-gradient(circle, rgba(12, 132, 255, 0.3) 0%, rgba(4, 8, 16, 0) 70%);
+  }
+  
+  .ambient-glow-2 {
+    width: 640px;
+    height: 640px;
+    bottom: -140px;
+    right: -100px;
+    background: radial-gradient(circle, rgba(94, 92, 230, 0.22) 0%, rgba(4, 8, 16, 0) 70%);
+    animation-delay: -8s;
+  }
+  
+  .ambient-glow-3 {
+    width: 420px;
+    height: 420px;
+    top: 35%;
+    left: 40%;
+    background: radial-gradient(circle, rgba(48, 209, 88, 0.10) 0%, rgba(4, 8, 16, 0) 70%);
+    animation-delay: -14s;
+  }
+  
+  @keyframes floatAmbient {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    50% { transform: translate3d(40px, 50px, 0) scale(1.08); }
+    100% { transform: translate3d(-30px, -25px, 0) scale(0.94); }
+  }
+  
+  /* ==========================================================================
+     Apple Liquid Glass Foundation
+     Kỹ thuật: 1 lớp backdrop-filter (khúc xạ nền) + 1 lớp gradient bề mặt
+     (độ đục kiểm soát) + viền "rim light" mô phỏng ánh sáng bẻ cong ở mép.
+     ========================================================================== */
+  .glass-panel {
+    position: relative;
+    background: var(--glass-bg-regular);
+    backdrop-filter: blur(var(--blur-regular)) saturate(var(--sat-glass));
+    -webkit-backdrop-filter: blur(var(--blur-regular)) saturate(var(--sat-glass));
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    box-shadow: var(--glass-specular), var(--glass-shadow);
+    transition:
+      transform 0.45s var(--ease-liquid),
+      border-color 0.4s var(--ease-liquid),
+      box-shadow 0.45s var(--ease-liquid),
+      background 0.4s var(--ease-liquid);
+    isolation: isolate;
+    overflow: hidden;
+  }
+  
+  /* Rim light: viền sáng mảnh chạy dọc mép trên-trái, đặc trưng của kính lồi Apple */
+  .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      var(--glass-rim-light) 0%,
+      rgba(255, 255, 255, 0.08) 22%,
+      rgba(255, 255, 255, 0) 45%,
+      rgba(255, 255, 255, 0) 70%,
+      rgba(255, 255, 255, 0.12) 100%
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.4s var(--ease-liquid);
+  }
+  
+  /* Vệt sáng chéo mờ quét qua bề mặt — gợi cảm giác bề mặt kính có độ cong vật lý */
+  .glass-panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.05) 48%,
+      rgba(255, 255, 255, 0.09) 50%,
+      rgba(255, 255, 255, 0.05) 52%,
+      transparent 70%
+    );
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+  }
+  
+  .glass-panel:hover {
+    border-color: var(--glass-border-hover);
+    background: var(--glass-bg-regular-hover);
+    transform: translateY(-2px);
+  }
+  
+  .glass-panel:hover::before { opacity: 0.85; }
+  .glass-panel:hover::after { opacity: 1; }
+  
+  .app-shell {
+    width: min(1520px, 94vw);
+    margin: 0 auto;
+    padding: 20px 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Accessibility Focus Ring */
+  a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible {
+    outline: 2px solid var(--samsung-blue);
+    outline-offset: 3px;
+  }
+  
+  /* ==========================================================================
+     Header & Topbar
+     ========================================================================== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding: 10px 18px;
+    border-radius: 20px;
+  }
+  
+  .topbar:hover { transform: none; } /* topbar không "nổi" khi hover, chỉ panel nội dung */
+  
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  
+  .sic-badge {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5px 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(12, 132, 255, 0.28), rgba(94, 92, 230, 0.28));
+    border: 1px solid rgba(12, 132, 255, 0.45);
+    box-shadow: 0 2px 14px var(--samsung-blue-glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  
+  .sic-logo-text {
+    font-size: 12.5px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    color: #fff;
+    line-height: 1.1;
+  }
+  
+  .sic-sub {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    color: rgba(255, 255, 255, 0.85);
+    text-transform: uppercase;
+  }
+  
+  .brand-divider {
+    width: 1px;
+    height: 30px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.18), transparent);
+  }
+  
+  .brand-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .brand h1 {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #fff;
+  }
+  
+  .ai-pill {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(48, 209, 88, 0.12);
+    color: var(--safe-green);
+    border: 1px solid rgba(48, 209, 88, 0.3);
+  }
+  
+  .model-tag {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 1px;
+    font-weight: 500;
+  }
+  
+  .topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .candidate-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--glass-bg-thin);
+    backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    -webkit-backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    border: 1px solid var(--glass-border);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  
+  .candidate-icon {
+    color: var(--samsung-blue);
+  }
+  
+  .server-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--glass-bg-thin);
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    -webkit-backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    transition: border-color 0.3s var(--ease-liquid), background 0.3s var(--ease-liquid);
+  }
+  
+  .pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--warn-amber);
+    box-shadow: 0 0 8px var(--warn-amber);
+    animation: pulseDot 2s infinite ease-in-out;
+  }
+  
+  .server-chip.ready {
+    border-color: rgba(48, 209, 88, 0.3);
+    background: linear-gradient(160deg, rgba(48, 209, 88, 0.12), rgba(255, 255, 255, 0.02));
+  }
+  .server-chip.ready .pulse-dot { background: var(--safe-green); box-shadow: 0 0 10px var(--safe-green); }
+  
+  .server-chip.error {
+    border-color: rgba(255, 69, 58, 0.3);
+    background: linear-gradient(160deg, rgba(255, 69, 58, 0.12), rgba(255, 255, 255, 0.02));
+  }
+  .server-chip.error .pulse-dot { background: var(--danger-red); box-shadow: 0 0 10px var(--danger-red); }
+  
+  @keyframes pulseDot {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.65; }
+  }
+  
+  /* ==========================================================================
+     Dashboard Grid
+     ========================================================================== */
+  .dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(350px, 0.8fr);
+    gap: 18px;
+  }
+  
+  .camera-card {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  
+  .eyebrow {
+    font-size: 9.5px;
+    letter-spacing: 1.5px;
+    font-weight: 800;
+    color: var(--samsung-blue);
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+  
+  .card-head h2 {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  
+  .camera-tools {
+    display: flex;
+    gap: 8px;
+  }
+  
+  /* Custom Select Dropdowns — kính mỏng (thin material) */
+  .custom-select-wrap select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: rgba(255, 255, 255, 0.05);
+    background-image:
+      linear-gradient(160deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.01)),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat, no-repeat;
+    background-position: 0 0, right 8px center;
+    backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    -webkit-backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 28px 7px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    outline: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transition: all 0.3s var(--ease-liquid);
+  }
+  
+  .custom-select-wrap select:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: var(--glass-border-hover);
+  }
+  
+  /* ==========================================================================
+     Video Stage Viewport
+     ========================================================================== */
+  .video-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 18px;
+    overflow: hidden;
+    background: radial-gradient(circle at center, #0b1526 0%, #03060c 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    transition: border-color 0.35s var(--ease-liquid), box-shadow 0.35s var(--ease-liquid);
+  }
+  
+  video, #poseCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  
+  #poseCanvas {
+    pointer-events: none;
+  }
+  
+  .camera-placeholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    padding: 24px;
+    background: radial-gradient(circle at center, rgba(12, 132, 255, 0.06), transparent 60%);
+  }
+  
+  .camera-placeholder.hidden {
+    display: none;
+  }
+  
+  .placeholder-glass {
+    background: var(--glass-bg-thin);
+    backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    -webkit-backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    padding: 26px 34px;
+    border-radius: 20px;
+    border: 1px solid var(--glass-border);
+    text-align: center;
+    max-width: 360px;
+    box-shadow: var(--glass-specular);
+  }
+  
+  .camera-icon {
+    color: var(--samsung-blue);
+    margin-bottom: 10px;
+    display: inline-flex;
+    padding: 12px;
+    border-radius: 50%;
+    background: rgba(12, 132, 255, 0.1);
+    box-shadow: 0 0 20px rgba(12, 132, 255, 0.18);
+  }
+  
+  .placeholder-glass h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  
+  .placeholder-glass p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+  
+  /* Fall Alert — kính đỏ cảnh báo, vẫn giữ độ trong để thấy khung hình phía sau */
+  .fall-flash {
+    display: none;
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translate3d(-50%, 0, 0) scale(0.96);
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #fff;
+    background: linear-gradient(160deg, rgba(255, 69, 58, 0.5), rgba(255, 69, 58, 0.28));
+    backdrop-filter: blur(22px) saturate(220%);
+    -webkit-backdrop-filter: blur(22px) saturate(220%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 8px 30px var(--danger-glow), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+    z-index: 10;
+    align-items: center;
+    gap: 8px;
+    will-change: transform, box-shadow;
+  }
+  
+  .fall-flash.visible {
+    display: inline-flex;
+    animation: liquidFlash 0.9s var(--ease-liquid) infinite alternate;
+  }
+  
+  .video-stage.fall {
+    border-color: rgba(255, 69, 58, 0.85);
+    box-shadow: inset 0 0 35px var(--danger-glow), 0 0 40px rgba(255, 69, 58, 0.25);
+  }
+  
+  @keyframes liquidFlash {
+    0% { transform: translate3d(-50%, 0, 0) scale(0.96); box-shadow: 0 6px 20px var(--danger-glow); }
+    100% { transform: translate3d(-50%, 0, 0) scale(1.03); box-shadow: 0 12px 40px rgba(255, 69, 58, 0.7); }
+  }
+  
+  /* ==========================================================================
+     Controls & Buttons — kính có phản hồi "nén" khi bấm giống Apple
+     ========================================================================== */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding-top: 2px;
+  }
+  
+  .btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg-thin);
+    backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    -webkit-backdrop-filter: blur(var(--blur-thin)) saturate(var(--sat-glass));
+    cursor: pointer;
+    transition: all 0.28s var(--ease-liquid);
+    box-shadow: var(--glass-specular), 0 2px 8px rgba(0, 0, 0, 0.15);
+    user-select: none;
+    overflow: hidden;
+  }
+  
+  .btn:hover:not(:disabled) {
+    transform: translateY(-1.5px);
+    border-color: var(--glass-border-hover);
+    box-shadow: var(--glass-specular), 0 8px 20px rgba(0, 0, 0, 0.28);
+  }
+  
+  .btn:active:not(:disabled) {
+    transform: translateY(0) scale(0.95);
+    transition-duration: 0.12s;
+  }
+  
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  .btn-primary {
+    background: linear-gradient(150deg, #2b9bff 0%, #0c66d1 100%);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 24px rgba(12, 132, 255, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+  }
+  
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(150deg, #45a8ff 0%, #1274e0 100%);
+    box-shadow: 0 10px 30px rgba(12, 132, 255, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  }
+  
+  .btn-upload {
+    background: linear-gradient(160deg, rgba(12, 132, 255, 0.16), rgba(12, 132, 255, 0.04));
+    border-color: rgba(12, 132, 255, 0.32);
+    color: #7cb6ff;
+  }
+  
+  .btn-upload:hover:not(:disabled) {
+    background: linear-gradient(160deg, rgba(12, 132, 255, 0.24), rgba(12, 132, 255, 0.06));
+    border-color: rgba(12, 132, 255, 0.5);
+  }
+  
+  /* Spinner Loading */
+  .btn-spinner { display: none; }
+  .btn.is-loading { cursor: wait; pointer-events: none; }
+  .btn.is-loading .btn-label { visibility: hidden; }
+  .btn.is-loading .btn-spinner {
+    display: block;
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  
+  @keyframes spin { to { transform: rotate(360deg); } }
+  
+  /* iOS Glass Toggle Pill */
+  .sound-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--glass-bg-thin);
+    border: 1px solid var(--glass-border);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.25s var(--ease-liquid), border-color 0.25s var(--ease-liquid);
+  }
+  
+  .sound-toggle:hover {
+    border-color: var(--glass-border-hover);
+  }
+  
+  .sound-toggle input { display: none; }
+  .toggle-slider {
+    width: 32px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+    position: relative;
+    transition: background 0.3s var(--ease-liquid);
+  }
+  
+  .toggle-slider::before {
+    content: "";
+    position: absolute;
+    top: 1.5px;
+    left: 1.5px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s var(--ease-bounce);
+  }
+  
+  .sound-toggle input:checked + .toggle-slider {
+    background: var(--safe-green);
+  }
+  
+  .sound-toggle input:checked + .toggle-slider::before {
+    transform: translate3d(16px, 0, 0);
+  }
+  
+  .toggle-text {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  
+  /* ==========================================================================
+     Side Panel & Status System
+     ========================================================================== */
+  .side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  
+  .status-card {
+    padding: 18px;
+    position: relative;
+  }
+  
+  .status-badge-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .sic-verified-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #60a5fa;
+    background: rgba(12, 132, 255, 0.1);
+    padding: 2px 7px;
+    border-radius: 6px;
+    border: 1px solid rgba(12, 132, 255, 0.22);
+  }
+  
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  
+  .status-orb {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+  }
+  
+  .orb-core {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    box-shadow: 0 0 14px var(--text-tertiary);
+    transition: all 0.4s var(--ease-liquid);
+  }
+  
+  .orb-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    animation: orbRotate 9s linear infinite;
+  }
+  
+  .status-row h2 {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    transition: color 0.35s ease;
+  }
+  
+  .status-row p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+  
+  .status-normal .orb-core {
+    background: var(--safe-green);
+    box-shadow: 0 0 20px var(--safe-green);
+  }
+  .status-normal .status-row h2 { color: var(--safe-green); }
+  
+  .status-fall {
+    border-color: rgba(255, 69, 58, 0.45);
+    background: linear-gradient(160deg, rgba(255, 69, 58, 0.16), rgba(255, 255, 255, 0.02));
+  }
+  .status-fall .orb-core {
+    background: var(--danger-red);
+    box-shadow: 0 0 25px var(--danger-red);
+  }
+  .status-fall .status-row h2 { color: var(--danger-red); }
+  
+  @keyframes orbRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* ==========================================================================
+     Probability Meter
+     ========================================================================== */
+  .probability-block {
+    margin-top: 16px;
+  }
+  
+  .metric-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  .metric-label b {
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .probability-track {
+    position: relative;
+    height: 9px;
+    margin-top: 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+    overflow: visible;
+  }
+  
+  #probabilityFill {
+    width: 0;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #30d158, #ffd60a);
+    box-shadow: 0 0 10px rgba(48, 209, 88, 0.4);
+    transition: width 0.25s var(--ease-liquid), background 0.3s ease, box-shadow 0.3s ease;
+    will-change: width;
+  }
+  
+  #thresholdMark {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 2px;
+    background: #fff;
+    box-shadow: 0 0 6px #fff;
+    border-radius: 2px;
+  }
+  
+  .threshold-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* ==========================================================================
+     Metrics Grid (Tabular Numerals)
+     ========================================================================== */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  
+  .metric {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .metric-icon-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  
+  .metric strong {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 6px 0 2px;
+    letter-spacing: -0.5px;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+  }
+  
+  .metric strong em {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: normal;
+    font-weight: 500;
+  }
+  
+  .metric small {
+    font-size: 10px;
+    color: var(--text-tertiary);
+  }
+  
+  /* ==========================================================================
+     Audit Log Event Stream
+     ========================================================================== */
+  .events-card {
+    padding: 16px;
+    min-height: 180px;
+  }
+  
+  .events-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .events-head h3 {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  
+  .glass-action-btn {
+    background: transparent;
+    border: 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 6px;
+    transition: all 0.25s var(--ease-liquid);
+  }
+  
+  .glass-action-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+  }
+  
+  .event-list {
+    max-height: 190px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  }
+  
+  .event-list::-webkit-scrollbar { width: 4px; }
+  .event-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+  }
+  
+  .empty-log {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-tertiary);
+    font-size: 11.5px;
+    padding: 28px 0;
+    text-align: center;
+  }
+  
+  .event-item {
+    display: grid;
+    grid-template-columns: 7px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    font-size: 11px;
+    transition: background 0.2s var(--ease-liquid);
+    animation: eventIn 0.35s var(--ease-liquid);
+  }
+  
+  @keyframes eventIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .event-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .event-item i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--samsung-blue);
+    box-shadow: 0 0 6px var(--samsung-blue);
+  }
+  
+  .event-item.fall i {
+    background: var(--danger-red);
+    box-shadow: 0 0 8px var(--danger-red);
+  }
+  
+  .event-item span {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
+  
+  /* ==========================================================================
+     Footer & Utilities
+     ========================================================================== */
+  .glass-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+    padding: 12px 18px;
+    border-radius: 16px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+  }
+  
+  .glass-footer:hover { transform: none; }
+  
+  .footer-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .sic-footer-chip {
+    color: var(--samsung-blue);
+    font-weight: 700;
+    background: rgba(12, 132, 255, 0.08);
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+  
+  .visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  /* ==========================================================================
+     Responsive & Motion Sensitivity
+     ========================================================================== */
+  @media (max-width: 1060px) {
+    .dashboard { grid-template-columns: 1fr; }
+    .side-panel { display: grid; grid-template-columns: 1fr 1fr; }
+    .status-card, .events-card { grid-column: span 1; }
+    .metrics-grid { grid-column: 1 / -1; }
+  }
+  
+  @media (max-width: 720px) {
+    .app-shell { width: 94vw; padding-top: 12px; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .topbar-actions { width: 100%; justify-content: space-between; }
+    .card-head { flex-direction: column; }
+    .camera-tools { width: 100%; }
+    .custom-select-wrap { flex: 1; }
+    .custom-select-wrap select { width: 100%; }
+    .video-stage { aspect-ratio: 4 / 3; }
+    .side-panel { display: flex; flex-direction: column; }
+    .glass-footer { flex-direction: column; text-align: left; align-items: flex-start; }
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-glow, .fall-flash, .pulse-dot, .orb-ring, .event-item { animation: none !important; }
+    .btn, #probabilityFill, .glass-panel, .glass-panel::before, .glass-panel::after,
+    .toggle-slider, .toggle-slider::before { transition: none !important; }
+  }

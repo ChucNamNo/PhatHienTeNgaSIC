@@ -1,0 +1,232 @@
+{% load static %}
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Hệ thống phát hiện té ngã cho người già. Đồ án AI Capstone - Samsung Innovation Campus (SIC) 2026.">
+  <title>Hệ thống phát hiện té ngã cho người già — Samsung Innovation Campus 2026</title>
+  
+  <!-- Tối ưu hóa tải Fonts với Preconnect & DNS-Prefetch -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Preload Stylesheet chính -->
+  <link rel="preload" href="{% static 'detector/css/style.css' %}" as="style">
+  <link rel="stylesheet" href="{% static 'detector/css/style.css' %}">
+</head>
+<body>
+  <!-- Hiệu ứng Liquid Mesh Background Glow -->
+  <div class="ambient-glow ambient-glow-1" aria-hidden="true"></div>
+  <div class="ambient-glow ambient-glow-2" aria-hidden="true"></div>
+  <div class="ambient-glow ambient-glow-3" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <!-- Topbar chuẩn nhận diện SIC & Apple Liquid Glass -->
+    <header class="topbar glass-panel" role="banner">
+      <div class="brand">
+        <div class="sic-badge" aria-label="Samsung Innovation Campus">
+          <span class="sic-logo-text">SAMSUNG</span>
+          <span class="sic-sub">Innovation Campus</span>
+        </div>
+        <div class="brand-divider" aria-hidden="true"></div>
+        <div class="brand-info">
+          <div class="brand-title-wrap">
+            <h1>Hệ Thống Phát Hiện Té Ngã</h1>
+            <span class="ai-pill">AI Capstone 2026</span>
+          </div>
+          <p class="model-tag">YOLOv8-Pose · BiGRU-Attention · Django Framework</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <div class="candidate-pill" title="Đơn vị đào tạo">
+          <svg class="candidate-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+          <span>Trường Đại học Công nghệ Thông tin &amp; Truyền thông — Đại học Thái Nguyên</span>
+        </div>
+        <div class="server-chip" id="serverChip" role="status" aria-live="polite">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          <b>Model sẵn sàng</b>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard" role="main">
+      <!-- Vùng Giám sát Video / Camera Stage -->
+      <section class="camera-card glass-panel" aria-labelledby="stageHeading">
+        <div class="card-head">
+          <div>
+            <p class="eyebrow">REAL-TIME INFERENCE STAGE</p>
+            <h2 id="stageHeading">Giám sát tư thế &amp; Phát hiện té ngã</h2>
+          </div>
+          <div class="camera-tools">
+            <div class="custom-select-wrap">
+              <select id="cameraSelect" aria-label="Chọn nguồn camera đầu vào">
+                <option value="">Camera mặc định</option>
+              </select>
+            </div>
+            <div class="custom-select-wrap">
+              <select id="fpsSelect" aria-label="Tốc độ phân tích khung hình">
+                <option value="125">8 FPS</option>
+                <option value="83">12 FPS</option>
+                <option value="67" selected>15 FPS</option>
+                <option value="50">20 FPS</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="video-stage" id="videoStage">
+          <video id="cameraVideo" autoplay muted playsinline></video>
+          <canvas id="poseCanvas" aria-hidden="true"></canvas>
+          
+          <div class="camera-placeholder" id="cameraPlaceholder">
+            <div class="placeholder-glass">
+              <div class="camera-icon" aria-hidden="true">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                  <circle cx="12" cy="13" r="3"/>
+                </svg>
+              </div>
+              <h3>Chưa có nguồn hình ảnh</h3>
+              <p>Khởi động camera trực tiếp hoặc tải tệp video để bắt đầu phân tích AI.</p>
+            </div>
+          </div>
+
+          <div class="fall-flash" id="fallFlash" role="alert" aria-live="assertive" aria-hidden="true">
+            <span class="warning-icon" aria-hidden="true">⚠️</span>
+            <span>CẢNH BÁO: PHÁT HIỆN TÉ NGÃ</span>
+          </div>
+        </div>
+        
+        <!-- Canvas ẩn phục vụ chụp frame gửi API -->
+        <canvas id="captureCanvas" hidden aria-hidden="true"></canvas>
+
+        <div class="controls" role="toolbar" aria-label="Bảng điều khiển giám sát">
+          <button class="btn btn-primary" id="startButton" type="button">
+            <span class="btn-label">Bật camera</span>
+            <span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+          
+          <button class="btn btn-upload" id="uploadButton" type="button" aria-label="Tải video demo từ thiết bị">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <span>Tải video demo</span>
+          </button>
+          <input id="videoFileInput" class="visually-hidden" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" aria-hidden="true" tabindex="-1">
+          
+          <button class="btn btn-glass" id="stopButton" type="button" disabled>Dừng</button>
+          <button class="btn btn-glass" id="resetButton" type="button">Đặt lại</button>
+
+          <label class="sound-toggle glass-pill" for="soundToggle" title="Bật/Tắt chuông báo động">
+            <input type="checkbox" id="soundToggle" checked>
+            <span class="toggle-slider" aria-hidden="true"></span>
+            <span class="toggle-text">Âm cảnh báo</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Sidebar Trạng thái & Đo lường -->
+      <aside class="side-panel" aria-label="Thông tin phân tích thời gian thực">
+        <!-- Trạng thái hệ thống -->
+        <section class="status-card glass-panel status-idle" id="statusCard">
+          <div class="status-badge-top">
+            <p class="eyebrow">SYSTEM STATUS</p>
+            <span class="sic-verified-tag">SIC AI Verified</span>
+          </div>
+          <div class="status-row">
+            <div class="status-orb" aria-hidden="true">
+              <div class="orb-core"></div>
+              <div class="orb-ring"></div>
+            </div>
+            <div class="status-meta" aria-live="polite" aria-atomic="true">
+              <h2 id="statusText">CHỜ DỮ LIỆU</h2>
+              <p id="statusDescription">Hệ thống sẵn sàng khởi động.</p>
+            </div>
+          </div>
+
+          <div class="probability-block">
+            <div class="metric-label">
+              <span>Xác suất té ngã</span>
+              <b id="probabilityText">0.0%</b>
+            </div>
+            <div class="probability-track" aria-hidden="true">
+              <div id="probabilityFill"></div>
+              <i id="thresholdMark"></i>
+            </div>
+            <div class="threshold-label">
+              <span>Ngưỡng kích hoạt</span>
+              <span id="thresholdText">45.77%</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Lưới thẻ Metric -->
+        <section class="metrics-grid" aria-label="Các chỉ số hoạt động">
+          <article class="metric glass-panel">
+            <div class="metric-icon-wrap">
+              <span class="metric-symbol" aria-hidden="true">⚡</span>
+              <span>Sự kiện Fall</span>
+            </div>
+            <strong id="fallCount">0</strong>
+            <small>Lần chuyển Normal → Fall</small>
+          </article>
+          
+          <article class="metric glass-panel">
+            <div class="metric-icon-wrap">
+              <span class="metric-symbol" aria-hidden="true">🎯</span>
+              <span>Hiệu năng</span>
+            </div>
+            <strong><b id="fpsValue">—</b><em> FPS</em></strong>
+            <small id="deviceText">Đang khởi tạo</small>
+          </article>
+        </section>
+
+        <!-- Audit Log / Lịch sử sự kiện -->
+        <section class="events-card glass-panel" aria-labelledby="logHeading">
+          <div class="events-head">
+            <div>
+              <p class="eyebrow">AUDIT LOG</p>
+              <h3 id="logHeading">Nhật ký sự kiện</h3>
+            </div>
+            <button id="clearLogButton" class="glass-action-btn" type="button" aria-label="Xóa toàn bộ lịch sử sự kiện">Xóa lịch sử</button>
+          </div>
+          
+          <div class="event-list" id="eventList" role="log" aria-live="polite" aria-relevant="additions">
+            <div class="empty-log">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.6" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 14 14"/>
+              </svg>
+              <span>Chưa có sự kiện nào được ghi nhận.</span>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <!-- Footer chứng nhận SIC & Thông tin phiên -->
+    <footer class="glass-footer" role="contentinfo">
+      <div class="footer-left">
+        <span class="sic-footer-chip">Samsung Innovation Campus 2026</span>
+        <span>Xử lý cục bộ thời gian thực trên Django Backend — bảo đảm tính riêng tư.</span>
+      </div>
+      <span id="sessionLabel" class="session-label">Session: —</span>
+    </footer>
+  </div>
+
+  <!-- Nạp Camera Controller script -->
+  <script src="{% static 'detector/js/camera.js' %}" defer></script>
+</body>
+</html>
