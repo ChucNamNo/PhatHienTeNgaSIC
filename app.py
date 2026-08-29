@@ -145,6 +145,10 @@ def predict_view(request):
         if frame_bgr is None:
             return JsonResponse({"ok": False, "error": "Không thể giải mã hình ảnh từ frame gửi lên."}, status=400)
 
+        # Kiểm tra trạng thái sẵn sàng của AI Service trước khi predict
+        if not ai_service.model_loaded:
+            return JsonResponse({"ok": False, "error": f"Mô hình AI chưa sẵn sàng: {ai_service.load_error}"}, status=500)
+
         # Chạy suy luận qua FallDetectionService
         result = ai_service.predict(frame_bgr, session_id=session_id)
         return JsonResponse(result)
@@ -152,6 +156,7 @@ def predict_view(request):
     except Exception as e:
         import traceback
         traceback.print_exc()
+        # Đảm bảo trả về JSON thay vì HTML 500 error page của Django
         return JsonResponse({"ok": False, "error": f"Lỗi xử lý server: {str(e)}"}, status=500)
 
 
@@ -175,15 +180,18 @@ def reset_view(request):
 
 def status_view(request):
     """Cung cấp trạng thái hoạt động của mô hình và phần cứng thực thi."""
-    health_info = ai_service.health(load=True)
-    return JsonResponse({
-        "ok": health_info.get("ok", True),
-        "status": "ready" if health_info.get("model_loaded") else "loading",
-        "model_loaded": health_info.get("model_loaded", False),
-        "device": health_info.get("device", "CPU"),
-        "gpu_name": health_info.get("gpu_name"),
-        "threshold": ai_service.threshold * 100
-    })
+    try:
+        health_info = ai_service.health(load=True)
+        return JsonResponse({
+            "ok": health_info.get("ok", True),
+            "status": "ready" if health_info.get("model_loaded") else "loading",
+            "model_loaded": health_info.get("model_loaded", False),
+            "device": health_info.get("device", "CPU"),
+            "gpu_name": health_info.get("gpu_name"),
+            "threshold": ai_service.threshold * 100
+        })
+    except Exception as e:
+        return JsonResponse({"ok": False, "model_loaded": False, "error": str(e)}, status=500)
 
 
 # -----------------------------------------------------------------------------
