@@ -1,6 +1,7 @@
 import sys
 import json
 import base64
+import traceback
 from pathlib import Path
 
 import numpy as np
@@ -13,7 +14,6 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-# Import Singleton Service từ thư mục services
 try:
     from services.model_service import get_model_service, FallDetectionService
 except ImportError as exc:
@@ -21,7 +21,7 @@ except ImportError as exc:
         "Không tìm thấy thư mục 'services'. Đảm bảo tệp model_service.py nằm trong thư mục services/"
     ) from exc
 
-# Khởi tạo instance AI Service và chuẩn hóa đường dẫn thư mục model
+# Khởi tạo instance AI Service
 ai_service: FallDetectionService = get_model_service(
     strict_mode=False, 
     pose_filename="yolov8n-pose.pt"
@@ -47,6 +47,12 @@ weights_candidates = [
     ai_service.model_dir / "Best BigRU Attention Model.pth"
 ]
 ai_service.classifier_path = next((p for p in weights_candidates if p.exists()), ai_service.model_dir / "Best_BiGRU_Attention_Model.pth")
+
+# Nạp model ngay khi khởi động
+try:
+    ai_service.load()
+except Exception as e:
+    print(f"[CẢNH BÁO KHỞI ĐỘNG] Chưa tải được model ngay: {e}")
 
 
 # -----------------------------------------------------------------------------
@@ -94,7 +100,6 @@ if not settings.configured:
     import django
     django.setup()
 
-# Khai báo biến application phục vụ Gunicorn trên Render
 application = get_wsgi_application()
 
 
@@ -145,18 +150,19 @@ def predict_view(request):
         if frame_bgr is None:
             return JsonResponse({"ok": False, "error": "Không thể giải mã hình ảnh từ frame gửi lên."}, status=400)
 
-        # Kiểm tra trạng thái sẵn sàng của AI Service trước khi predict
+        # Đảm bảo model được nạp trước khi suy luận
         if not ai_service.model_loaded:
-            return JsonResponse({"ok": False, "error": f"Mô hình AI chưa sẵn sàng: {ai_service.load_error}"}, status=500)
+            try:
+                ai_service.load()
+            except Exception as load_exc:
+                return JsonResponse({"ok": False, "error": f"Lỗi nạp mô hình: {str(load_exc)}"}, status=500)
 
         # Chạy suy luận qua FallDetectionService
         result = ai_service.predict(frame_bgr, session_id=session_id)
         return JsonResponse(result)
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
-        # Đảm bảo trả về JSON thay vì HTML 500 error page của Django
         return JsonResponse({"ok": False, "error": f"Lỗi xử lý server: {str(e)}"}, status=500)
 
 
@@ -208,7 +214,6 @@ urlpatterns = [
     path("api/health/", status_view, name="api_health"),
 ]
 
-# Tự động map thư mục static phục vụ CSS/JS
 static_folder = ROOT / "static"
 if static_folder.exists():
     urlpatterns.append(
