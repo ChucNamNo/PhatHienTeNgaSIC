@@ -4,7 +4,7 @@ services:
     env: python
     region: singapore
     plan: free
-    buildCommand: "./build.sh"
+    buildCommand: "chmod +x build.sh && ./build.sh"
     startCommand: "gunicorn app:application --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 120"
     envVars:
       - key: PYTHON_VERSION
